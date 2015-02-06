@@ -1,0 +1,30 @@
+.invis {
+  display: none; }
+
+.btn-danger {
+  position: absolute;
+  right: 0;
+  top: 0; }
+
+#loginWrapper, #mainWrapper {
+  margin: auto;
+  width: 50%;
+  text-align: center; }
+
+h1 {
+  font-family: 'Open Sans';
+  padding-top: 50px; }
+
+input {
+  height: 34px; }
+
+#chatWindow {
+  border: 1px solid black;
+  height: 300px;
+  margin-bottom: 1em; }
+
+#messageInput {
+  width: 80%; }
+
+.btn-success {
+  width: 18%; }
