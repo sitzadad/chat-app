@@ -1,210 +1,184 @@
-//locally generated ID
-var localId = '';
-//contains local user's info (including local ID/storedID)
-var localUser = {};
-
-var msgArray = []
-
 var chatApp = {
   config: {
     url: "http://tiy-fee-rest.herokuapp.com/collections/closetalkers"
   },
 
   init: function () {
-    chatApp.checkUser();
+    chatApp.initUser();//skips login screen if returning user (via localStorage)
     chatApp.initStyle();
     chatApp.initEvents();
   },
-  initStyle: function () {
-    $('#mainWrapper').addClass('invis');
+  initUser: function () {
+    if(localStorage.localUser){//FYI: if server is wiped, make sure localStorage.localUser is deleted
+      $.ajax({
+        url:chatApp.config.url,
+        type:'GET',
+        success: function (retrievedUsers) {
+          _.each(retrievedUsers, function (eachUser) {
+            if(localStorage.localUser === eachUser.name){
+              chatApp.loadMain();
+              console.log('SUCCESS: initUser recognized \''+localStorage.localUser+'\'');
+            }
+          });
+        },
+        error: function (error) {
+          console.log('WARNING: initUser');
+        }
+      });
+    }else{
+      //localStorage.localUser does not exist
+      console.log('ALERT: initUser does NOT recognize user')
+    }
   },
-  initEvents: function() {
-    $('#enterUserForm').on('submit',function(e){
+  initStyle: function () {
+  },
+  initEvents: function () {
+    $('#enterUsernameForm').on('submit', function (e) {
       e.preventDefault();
-
-
-      //assigning unique local ID
-      localId = Date.now();
-      //assembling user info from form into object
       var userInput = {
         name: $(this).find('input[name="enterUsernameInput"]').val(),
-        storedId: localId,
-        message: msgArray,
+        messages: ['']
       };
-      chatApp.createUser(userInput);
+      chatApp.preventDuplicateUsername(userInput);//hand off to store or match userInput on server
 
-    });
-    $('#enterTextForm').on('submit',function(e){
-      e.preventDefault();
-
+      // //Uncomment this ajax and comment other code in function to delete server w/ "Send" button
+      // delete localStorage.localUser;
       // $.ajax({
       //   url:chatApp.config.url,
       //   type:'DELETE',
       //   success: function(retrievedUsers){
-      //
       //   },
       //   error: function(error){
-      //
       //   }
       // });
-
-      localId = Date.now();
-      var foo = localStorage.name;
-      var serverId = $('.userCard').attr('rel', foo).data('userid');
-      console.log(serverId);
-
-      var msg = $(this).find('input[name="enterMessageInput"]').val();
-
-      var updatedUserInfo = {
-          name: foo,
-          storedId: localId,
-          message: msgArray
-        }
-
-      msgArray.push(msg);
-
-      chatApp.sendChat(serverId, updatedUserInfo);
-
-      console.log('send was clicked');
     });
-    $('.btn-danger').on('submit',function(e){
+    $('#enterTextForm').on('submit', function (e) {
       e.preventDefault();
-      $.ajax({
-        url:chatApp.config.url,
-        type:'DELETE',
-        success: function(){
-          console.log('Deleted!');
-        },
-        error: function(error){
-          console.log('ALERT:delete ajax failure'+error);
-        }
-      });
+      chatApp.sendChat();
     });
-
+    $('#logOutBtn').on('click', function (e) {
+      e.preventDefault();
+      chatApp.logOutUser();//enables log out
+    });
+    $('#refreshChatsBtn').on('click', function (e) {
+      e.preventDefault();
+      chatApp.renderChats();
+    });
   },
-  checkUser: function() {
-    if(localStorage.closetalkersId===undefined){
-      console.log('assuming user\'s first visit');
-    }else{
-      $.ajax({
-        url:chatApp.config.url,
-        type:'GET',
-        success: function(retrievedUsers){
-          _.each(retrievedUsers, function(eachUser){
-            if(localStorage.closetalkersId === eachUser.storedId){
-              localUser = eachUser;
-            chatApp.loadMain();
-            console.log('SUCCESS:checkUser matched local id with stored id on server');
-            }
-            chatApp.renderAllUsers();
-          });
-        },
-        error: function(error){
-          console.log('ALERT:checkUser ajax failure'+error);
-        }
-      });
-    }
-  },
-  createUser: function (passedUser) {
-    chatApp.preventDuplicateUsernames();
-    //if username is not already taken, then go ahead and create it
-    if($.isEmptyObject(localUser) === true){
-      $.ajax({
-        url: chatApp.config.url,
-        data: passedUser,
-        type: 'POST',
-        success:function(data){
-          //storing local ID for future visits
-          localStorage.closetalkersId = localId;
-          chatApp.loadMain();
-          localUser = passedUser;
-          console.log('SUCCESS:createUser POSTed username'+passedUser);
-          chatApp.renderAllUsers();
-        },
-        error:function(error){
-          console.log('ALERT:createUser ajax failure'+error);
-        }
-      });
-    }else{
-      console.log('SUCCESS:preventDuplicate recognized username');
-    }
-  },
-  preventDuplicateUsernames: function () {
+  preventDuplicateUsername: function (passed) {
     $.ajax({
       url:chatApp.config.url,
       type:'GET',
       success: function(retrievedUsers){
         _.each(retrievedUsers, function(eachUser){
-          if($('#enterUserForm input[name="enterUsernameInput"]').val() === eachUser.name){
-            localStorage.closetalkersId = eachUser.storedId;
-            //assigned so we can reference current user
-            localUser = eachUser;
+          if(eachUser.name.toLowerCase() === passed.name.toLowerCase()){
+            localStorage.localUser = eachUser.name;
             chatApp.loadMain();
-            chatApp.renderAllUsers();
+            console.log('SUCCESS: preventDuplicateUsername (\''+localStorage.localUser+'\')');
           }
         });
+        if(!('localUser' in localStorage)){//passes off only if no matching username was found on server
+          chatApp.createNewUser(passed);
+        }
       },
-      error: function(error){
-        console.log('ALERT:preventDuplicate ajax failure'+error);
+      error: function(){
+        console.log('WARNING: preventDuplicateUsername');
+      }
+    });
+  },
+  createNewUser: function (passed) {
+    $.ajax({
+      url: chatApp.config.url,
+      data: passed,
+      type: 'POST',
+      success:function(){
+        localStorage.localUser = passed.name;
+        chatApp.loadMain();
+        console.log('SUCCESS: createNewUser (\''+localStorage.localUser+'\')');
+      },
+      error:function(error){
+        console.log('WARNING: createNewUser');
       }
     });
   },
   loadMain: function () {
-    $('#loginWrapper').addClass('invis');
-    $('#mainWrapper').removeClass('invis');
-  },
-  renderAllUsers: function () {
+    //grabbing/rendering usernames listed on server (IMPORTANT: this is where we get _id!)
     $.ajax({
       url: chatApp.config.url,
       type: 'GET',
       success: function (retrievedUsers) {
-
-        var compiledUserTemplate = _.template(templates.userList);
-        // $('.container').append(compiledTemplate);
-
+        var compiled = _.template(templates.userList);
         var markup = "";
-        _.each(retrievedUsers, function (item, idx, arr) {
-          markup += compiledUserTemplate(item);
+        _.each(retrievedUsers, function (eachUser) {
+          markup += compiled(eachUser);
         });
-        console.log('markup is.....', markup);
         $('#userList').html(markup);
+        console.log('SUCCESS: loadMain rendered usernames from server');
       },
-
-      error: function (err) {
-        console.log(err);
+      error: function () {
+        console.log('Warning: loadMain');
       }
-
     });
+    //hiding login screen/showing main chat page
+    $('#loginWrapper').addClass('invis');
+    $('#mainWrapper').removeClass('invis');
   },
-  sendChat: function (id, msg) {
-
-
-  $.ajax({
-     url: chatApp.config.url + '/' + id,
-     data: msg,
-     type: 'PUT',
-     success: function (data) {
-       console.log(data);
-      //  chatApp.renderAllMessages();
-     },
-     error: function (err) {
-         console.log(err);
-       }
-   });
-
-
-
+  logOutUser: function () {
+    delete localStorage.localUser;
+    console.log('SUCCESS: deleted localStorage.localUser');
+    location.reload();
+  },
+  sendChat: function () {
+    $.ajax({
+      url:chatApp.config.url,
+      type:'GET',
+      success: function (retrievedUsers) {
+        var serverMsgArray = [];
+        var msg = $('#enterTextForm input[name="enterTextInput"]').val();
+        var updatedUserInput = {};
+        var serverId = '';
+        _.each(retrievedUsers,function (eachUser) {
+          if(eachUser.name === localStorage.localUser){
+            serverMsgArray = eachUser.messages;
+            serverMsgArray.push(msg);//pushing current message to array retrieved from server
+            updatedUserInput = {
+                name: localStorage.localUser,
+                messages: serverMsgArray
+            }
+            serverId = $('.userCard[rel='+localStorage.localUser+']').data('userid');
+            console.log('SUCCESS: sendChat retrieved messages from server (_id: '+serverId+')');
+            $.ajax({
+               url: chatApp.config.url + '/' + serverId,
+               data: updatedUserInput,
+               type: 'PUT',
+               success: function () {
+                 $('#enterTextForm input[name="enterTextInput"]').val('');
+                 console.log('SUCCESS: sendChat uploaded message to server (_id: '+serverId+')');
+               },
+               error: function () {
+                 console.log('WARNING: sendChat failed to upload message to server');
+               }
+             });
+           }
+        });
+      },
+      error: function(error){
+        console.log('WARNING: sendChat failed to retrieve messages from server'+error);
+      }
+    });
   },
   renderChats: function () {
     $.ajax({
       url:chatApp.config.url,
       type:'GET',
       success: function(retrievedUsers){
-        _.each(retrievedUsers, function(eachUser){
-          eachUser.chatMain;
-            //CODE STILL NEEDS TO GO HERE
+        var compiled = _.template(templates.message);
+        var markup = '';
+        _.each(retrievedUsers, function (eachUser) {
+            markup += compiled(eachUser);
         });
-        console.log('SUCCESS:renderChats ajax worked'+error);
+        $('#chatWindow').html(markup);
+        console.log('SUCCESS: renderChats');
       },
       error: function(error){
         console.log('ALERT:renderChats ajax failure'+error);

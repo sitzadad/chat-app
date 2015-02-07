@@ -6,8 +6,9 @@ templates.userList = [
 "</div>"
 ].join("")
 
-templates.messageList = [
+templates.message = [
 "<div class='messageCard' data-userid='<%= _id %>'>",
-"<p class='userMessage'><%= user.messages %></p>",
+"<p class='userMessage'><%= name %></p>",
+"<p><%= messages %></p>",
 "</div>"
 ].join("")

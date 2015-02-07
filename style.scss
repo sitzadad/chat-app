@@ -1,10 +1,15 @@
 .invis{
   display:none;
 }
-.btn-danger{
+#logOutBtn{
   position:absolute;
-  right:0;
-  top:0;
+  right:10px;
+  top:10px;
+}
+#refreshChatsBtn{
+  position:absolute;
+  right:97px;
+  top:10px;
 }
 #loginWrapper,#mainWrapper{
   margin:auto;

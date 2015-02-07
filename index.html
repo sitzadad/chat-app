@@ -8,15 +8,16 @@
     <link rel='stylesheet' href='style.css'/>
   </head>
   <body>
-    <button type='submit' class='btn btn-danger'>Save</button>
     <div id='loginWrapper'>
       <h1>Close Talkers</h1>
-      <form id='enterUserForm' action="">
+      <form id='enterUsernameForm' action="">
         <input type="text" name='enterUsernameInput' placeholder='Enter Username'>
-        <button type='submit' class='btn btn-primary'>Save</button>
+        <button type='submit' class='btn btn-primary'>Log In</button>
       </form>
     </div>
     <div id="mainWrapper" class='invis'>
+      <button class='btn btn-danger' id='logOutBtn'>Log Out</button>
+      <button class='btn btn-warning' id='refreshChatsBtn'>Refresh Chats</button>
       <h1>Close Talkers</h1>
       <div id="chatWindow"></div>
       <form id='enterTextForm' action="">
