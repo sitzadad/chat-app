@@ -134,7 +134,10 @@ var chatApp = {
       type:'GET',
       success: function (retrievedUsers) {
         var serverMsgArray = [];
-        var msg = $('#enterTextForm input[name="enterTextInput"]').val();
+        var msg = {
+          timeStamp: Date.now(),
+          content: $('#enterTextForm input[name="enterTextInput"]').val()
+        }
         var updatedUserInput = {};
         var serverId = '';
         _.each(retrievedUsers,function (eachUser) {
@@ -162,7 +165,7 @@ var chatApp = {
            }
         });
       },
-      error: function(error){
+      error: function(){
         console.log('WARNING: sendChat failed to retrieve messages from server'+error);
       }
     });
@@ -175,13 +178,15 @@ var chatApp = {
         var compiled = _.template(templates.message);
         var markup = '';
         _.each(retrievedUsers, function (eachUser) {
-            markup += compiled(eachUser);
+          _.each(eachUser.messages, function (userMsgObj) {
+            markup += compiled(userMsgObj);
+          });
         });
         $('#chatWindow').html(markup);
         console.log('SUCCESS: renderChats');
       },
       error: function(error){
-        console.log('ALERT:renderChats ajax failure'+error);
+        console.log('WARNING: renderChats');
       }
     });
   }
