@@ -7,7 +7,8 @@ templates.userList = [
 ].join("")
 
 templates.message = [
-"<div class='messageCard'>",
-"<p class='userMessage'><%= content %><%= timeStamp %></p>",
-"</div>"
+'<p class="messageCard">',
+'<span class = "userIdentifier"><%= name %>:</span>',
+'<span class = "userMessage"><%= content %></span>',
+'</p>'
 ].join("")

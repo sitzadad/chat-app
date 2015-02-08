@@ -31,6 +31,7 @@ var chatApp = {
     }
   },
   initStyle: function () {
+
   },
   initEvents: function () {
     $('#enterUsernameForm').on('submit', function (e) {
@@ -122,6 +123,8 @@ var chatApp = {
     //hiding login screen/showing main chat page
     $('#loginWrapper').addClass('invis');
     $('#mainWrapper').removeClass('invis');
+    //auto update chats
+    setInterval(chatApp.renderChats, 200);
   },
   logOutUser: function () {
     delete localStorage.localUser;
@@ -136,7 +139,8 @@ var chatApp = {
         var serverMsgArray = [];
         var msg = {
           timeStamp: Date.now(),
-          content: $('#enterTextForm input[name="enterTextInput"]').val()
+          content: $('#enterTextForm input[name="enterTextInput"]').val(),
+          name: localStorage.localUser
         }
         var updatedUserInput = {};
         var serverId = '';
@@ -175,12 +179,17 @@ var chatApp = {
       url:chatApp.config.url,
       type:'GET',
       success: function(retrievedUsers){
+        var masterMsgArray = [];
+        _.each(retrievedUsers, function (eachUser) {
+          _.each(eachUser.messages, function (usersMsgObj) {
+            masterMsgArray.push(usersMsgObj);
+          });
+        });
+        masterMsgArray = _.sortBy( masterMsgArray, 'timeStamp' );
         var compiled = _.template(templates.message);
         var markup = '';
-        _.each(retrievedUsers, function (eachUser) {
-          _.each(eachUser.messages, function (userMsgObj) {
-            markup += compiled(userMsgObj);
-          });
+        _.each(masterMsgArray, function (usersMsgObj) {
+          markup += compiled(usersMsgObj);
         });
         $('#chatWindow').html(markup);
         console.log('SUCCESS: renderChats');

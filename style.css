@@ -26,10 +26,18 @@ input {
 #chatWindow {
   border: 1px solid black;
   height: 300px;
-  margin-bottom: 1em; }
+  margin-bottom: 1em;
+  text-align: left;
+  padding-left: 0.5em;
+  overflow: auto; }
 
 #messageInput {
   width: 80%; }
 
 .btn-success {
   width: 18%; }
+
+.userIdentifier {
+  font-weight: bold;
+  color: red;
+  margin-right: 1em; }
