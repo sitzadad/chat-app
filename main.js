@@ -192,6 +192,9 @@ var chatApp = {
           markup += compiled(usersMsgObj);
         });
         $('#chatWindow').html(markup);
+        $("#chatWindow").animate({
+          scrollTop: $("#chatWindow").height()
+        }, 0);
         console.log('SUCCESS: renderChats');
       },
       error: function(error){
