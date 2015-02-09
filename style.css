@@ -29,7 +29,8 @@ input {
   margin-bottom: 1em;
   text-align: left;
   padding-left: 0.5em;
-  overflow: auto; }
+  overflow: auto;
+  padding: 0; }
 
 #messageInput {
   width: 80%; }
@@ -41,3 +42,11 @@ input {
   font-weight: bold;
   color: red;
   margin-right: 1em; }
+
+.messageCard {
+  margin: 0;
+  padding-top: 5px;
+  padding-bottom: 5px; }
+
+.messageCard:nth-child(odd) {
+  background-color: lightgrey; }

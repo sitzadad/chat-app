@@ -1,17 +1,17 @@
-var previousArrayLength = 0;
+
+var previousArrayLength = 0;//declared for conditional rendering of chats
 
 var chatApp = {
   config: {
-    url: "http://tiy-fee-rest.herokuapp.com/collections/closetalkers"
+    url: "http://tiy-fee-rest.herokuapp.com/collections/closetalkersDeux"
   },
-
   init: function () {
     chatApp.initUser();//skips login screen if returning user (via localStorage)
     chatApp.initStyle();
     chatApp.initEvents();
   },
   initUser: function () {
-    if(localStorage.localUser){//FYI: if server is wiped, make sure localStorage.localUser is deleted
+    if(localStorage.localUser){
       $.ajax({
         url:chatApp.config.url,
         type:'GET',
@@ -40,6 +40,7 @@ var chatApp = {
       e.preventDefault();
       var userInput = {
         name: $(this).find('input[name="enterUsernameInput"]').val(),
+        active: '',
         messages: ['']
       };
       chatApp.preventDuplicateUsername(userInput);//hand off to store or match userInput on server
@@ -105,18 +106,39 @@ var chatApp = {
     });
   },
   loadMain: function () {
-    //grabbing/rendering usernames listed on server (IMPORTANT: this is where we get _id!)
     $.ajax({
       url: chatApp.config.url,
       type: 'GET',
       success: function (retrievedUsers) {
+        //grabbing/rendering usernames listed on server (IMPORTANT: this is where we get _id!)
         var compiled = _.template(templates.userList);
         var markup = "";
         _.each(retrievedUsers, function (eachUser) {
           markup += compiled(eachUser);
+          $('#userList').html(markup);//adds usernames from server in DOM
+          console.log('SUCCESS: loadMain rendered usernames from server');
+          //changing 'active' to 'true' for user
+          if(eachUser.name === localStorage.localUser){
+            updatedUserInput = {
+                name: eachUser.name,
+                active: true,
+                messages: eachUser.messages
+            }
+            serverId = $('.userCard[rel='+localStorage.localUser+']').data('userid');
+            console.log('SUCCESS: loadMain retrieved user object and made "active" = true (_id: '+serverId+')');
+            $.ajax({
+               url: chatApp.config.url + '/' + serverId,
+               data: updatedUserInput,
+               type: 'PUT',
+               success: function () {
+                 console.log('SUCCESS: loadMain updated server with "active" = true (_id: '+serverId+')');
+               },
+               error: function () {
+                 console.log('WARNING: loadMain failed to update server with falsified "active" key');
+               }
+             });
+           }
         });
-        $('#userList').html(markup);
-        console.log('SUCCESS: loadMain rendered usernames from server');
       },
       error: function () {
         console.log('Warning: loadMain');
@@ -129,9 +151,42 @@ var chatApp = {
     setInterval(chatApp.renderChats, 200);
   },
   logOutUser: function () {
-    delete localStorage.localUser;
-    console.log('SUCCESS: deleted localStorage.localUser');
-    location.reload();
+    $.ajax({
+      url:chatApp.config.url,
+      type:'GET',
+      success: function (retrievedUsers) {
+        var updatedUserInput = {};
+        var serverId = '';
+        _.each(retrievedUsers,function (eachUser) {
+          if(eachUser.name === localStorage.localUser){
+            updatedUserInput = {
+                name: eachUser.name,
+                active: false,
+                messages: eachUser.messages
+            }
+            serverId = $('.userCard[rel='+localStorage.localUser+']').data('userid');
+            console.log('SUCCESS: logOutUser retrieved user object and falsified "active" key (_id: '+serverId+')');
+            $.ajax({
+               url: chatApp.config.url + '/' + serverId,
+               data: updatedUserInput,
+               type: 'PUT',
+               success: function () {
+                 delete localStorage.localUser;//user will now not be recognized by initUser
+                 console.log('SUCCESS: logOutUser updated server with falsified "active" key (_id: '+serverId+')');
+                 location.reload();
+               },
+               error: function () {
+                 console.log('WARNING: logOutUser failed to update server with falsified "active" key');
+               }
+             });
+           }
+        });
+      },
+      error: function(){
+        console.log('WARNING: logOutUser failed to retrieve user object');
+      }
+    });
+
   },
   sendChat: function () {
     $.ajax({
@@ -151,7 +206,8 @@ var chatApp = {
             serverMsgArray = eachUser.messages;
             serverMsgArray.push(msg);//pushing current message to array retrieved from server
             updatedUserInput = {
-                name: localStorage.localUser,
+                name: eachUser.name,
+                active: eachUser.active,
                 messages: serverMsgArray
             }
             serverId = $('.userCard[rel='+localStorage.localUser+']').data('userid');
@@ -187,10 +243,8 @@ var chatApp = {
             masterMsgArray.push(usersMsgObj);
           });
         });
-        if(!(previousArrayLength === masterMsgArray.length)){
-          console.log(previousArrayLength);
-          console.log(masterMsgArray.length);
-          previousArrayLength = masterMsgArray.length;
+        if(!(previousArrayLength === masterMsgArray.length)){//if new chat added, rerender and execute autoscroll
+          previousArrayLength = masterMsgArray.length;//previousArrayLength is declared globally at top of page
           masterMsgArray = _.sortBy( masterMsgArray, 'timeStamp' );
           var compiled = _.template(templates.message);
           var markup = '';
@@ -199,7 +253,7 @@ var chatApp = {
           });
           $('#chatWindow').html(markup);
           var foo = document.getElementById('chatWindow');
-          foo.scrollTop = foo.scrollHeight;
+          foo.scrollTop = foo.scrollHeight;//this is the autoscroll
           console.log('SUCCESS: renderChats');
         }
       },
