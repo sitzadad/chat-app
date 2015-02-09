@@ -1,3 +1,5 @@
+var previousArrayLength = 0;
+
 var chatApp = {
   config: {
     url: "http://tiy-fee-rest.herokuapp.com/collections/closetalkers"
@@ -185,17 +187,21 @@ var chatApp = {
             masterMsgArray.push(usersMsgObj);
           });
         });
-        masterMsgArray = _.sortBy( masterMsgArray, 'timeStamp' );
-        var compiled = _.template(templates.message);
-        var markup = '';
-        _.each(masterMsgArray, function (usersMsgObj) {
-          markup += compiled(usersMsgObj);
-        });
-        $('#chatWindow').html(markup);
-        $("#chatWindow").animate({
-          scrollTop: $("#chatWindow").height()
-        }, 0);
-        console.log('SUCCESS: renderChats');
+        if(!(previousArrayLength === masterMsgArray.length)){
+          console.log(previousArrayLength);
+          console.log(masterMsgArray.length);
+          previousArrayLength = masterMsgArray.length;
+          masterMsgArray = _.sortBy( masterMsgArray, 'timeStamp' );
+          var compiled = _.template(templates.message);
+          var markup = '';
+          _.each(masterMsgArray, function (usersMsgObj) {
+            markup += compiled(usersMsgObj);
+          });
+          $('#chatWindow').html(markup);
+          var foo = document.getElementById('chatWindow');
+          foo.scrollTop = foo.scrollHeight;
+          console.log('SUCCESS: renderChats');
+        }
       },
       error: function(error){
         console.log('WARNING: renderChats');
